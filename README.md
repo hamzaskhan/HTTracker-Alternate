@@ -1,6 +1,6 @@
 # Picnic Day Series Offline Site Copier
 
-This Python script replicates the core functionality of HTTrack by crawling a website, downloading its pages, assets, and rewriting links for offline browsing. It creates a local copy of the site—including a JSON file representing the site's link tree and a CSV file of unique URLs—making it easy to browse offline. The script is designed to be easily adaptable across platforms, including macOS.
+This Python script replicates the core functionality of HTTrack by crawling a website, downloading its pages, assets, and rewriting links for offline browsing. It creates a local copy of the site—including a JSON file representing the site's link tree and a CSV file of unique URLs—making it easy to browse offline. The script is designed to be easily adaptable across platforms, including macOS. Currently it works for windows but you are welcome to extend it's capability across MacOs directory structure.
 
 ## Features
 
