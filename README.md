@@ -15,7 +15,7 @@ This Python script replicates the core functionality of HTTrack by crawling a we
 1. **Run the Script:**  
    Execute the script using Python 3.
    ```bash
-   python [BenchMark]Website_Link_Scraperv2.py
+   python Download_Website_OfflineV2.py
    ```
 
 2. **Provide Inputs:**  
