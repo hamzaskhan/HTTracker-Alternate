@@ -8,11 +8,26 @@ from urllib.request import url2pathname
 import sys
 import json
 import csv
+import argparse
+import logging
+from pathlib import Path
 
 sys.setrecursionlimit(10000)
 
 # --- Offline Configuration ---
 OFFLINE_ROOT = "downloaded_site"
+
+# --- Runtime Globals ---
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+session = requests.Session()
+downloaded_assets = set()
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Download a website for offline viewing.")
+    parser.add_argument("url", nargs="?", default="https://hamzak.cloud", help="Root URL to crawl")
+    parser.add_argument("-d", "--depth", type=int, default=1, help="Maximum crawl depth")
+    parser.add_argument("-o", "--output", default=OFFLINE_ROOT, help="Output directory for offline site")
+    return parser.parse_args()
 
 # --- Utility Functions ---
 
@@ -45,15 +60,21 @@ def ensure_dir(filepath):
 
 def download_file(url, local_path):
     """
-    Download a file and save it to local_path.
-    Returns True if successful.
+    Download a file and save it to `local_path` using a shared requests.Session.
+
+    Skips the download if the asset was already fetched during this run or if
+    the target file already exists on disk. Returns True if the file is
+    confirmed to be available locally.
     """
     try:
-        response = requests.get(url, timeout=10)
+        if url in downloaded_assets or os.path.exists(local_path):
+            return True
+        response = session.get(url, timeout=10)
         if response.status_code == 200:
             ensure_dir(local_path)
             with open(local_path, "wb") as f:
                 f.write(response.content)
+            downloaded_assets.add(url)
             return True
     except Exception as e:
         print(f"Error downloading asset {url}: {e}")
@@ -170,7 +191,7 @@ def scrape_page(url):
     Returns a dictionary with page info.
     """
     try:
-        response = requests.get(url, timeout=10)
+        response = session.get(url, timeout=10)
         if response.status_code != 200:
             print(f"Warning: Received status code {response.status_code} for URL: {url}")
             return None
@@ -235,33 +256,34 @@ def traverse_tree(node, unique_links=None):
         traverse_tree(child, unique_links)
     return unique_links
 
-# --- Main Execution ---
+# --- CLI / Main Execution ---
 
-if __name__ == "__main__":
-    website_url = input("Enter the website URL to crawl [default: https://hamzak.cloud]: ").strip()
-    if not website_url:
-        website_url = "https://hamzak.cloud"
-    max_depth_input = input("Enter the maximum depth to crawl [default: 1]: ").strip()
-    try:
-        max_depth = int(max_depth_input) if max_depth_input else 1
-    except ValueError:
-        max_depth = 1
+def main():
+    args = parse_args()
+    website_url = args.url
+    max_depth = args.depth
+
+    global OFFLINE_ROOT
+    OFFLINE_ROOT = args.output
 
     parsed_base = urlparse(website_url)
     base_domain = website_url if parsed_base.scheme == "file" else parsed_base.netloc
 
     visited = set()
     tree = build_tree(website_url, base_domain, max_depth, visited)
-    
-    # Save the link tree in an organized JSON format.
-    output_json = "link_tree.json"
+
+    # Ensure output directory exists
+    os.makedirs(OFFLINE_ROOT, exist_ok=True)
+
+    # Save the link tree
+    output_json = os.path.join(OFFLINE_ROOT, "link_tree.json")
     with open(output_json, "w", encoding="utf-8") as f:
         json.dump(tree, f, indent=2, ensure_ascii=False)
     print(f"\nLink tree has been saved to {output_json}")
 
-    # Traverse the tree to collect unique URLs.
+    # Collect unique URLs
     unique_links = traverse_tree(tree)
-    output_csv = "unique_links.csv"
+    output_csv = os.path.join(OFFLINE_ROOT, "unique_links.csv")
     with open(output_csv, "w", encoding="utf-8", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["URL", "Title"])
@@ -270,3 +292,7 @@ if __name__ == "__main__":
     print(f"Unique links have been saved to {output_csv}")
 
     print("\nOffline site has been saved under the directory:", OFFLINE_ROOT)
+
+
+if __name__ == "__main__":
+    main()
