@@ -38,9 +38,7 @@ requests
 beautifulsoup4
 ```
 
-This setup covers all the external dependencies. Built-in modules like `os`, `re`, `time`, `sys`, `json`, and `csv` require no installation.
-
 ### Check out my Picnic-Day-Scrapers repo to gain a further understanding.
 
 Thankyou,
-Hamza
+Hamza Khan
